@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>#petitplanet YouTube 最新视频看板</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172026;
+        --muted: #63707a;
+        --line: #dbe3e8;
+        --panel: #ffffff;
+        --soft: #f5f8fa;
+        --brand: #d61f2c;
+        --brand-dark: #9f1721;
+        --accent: #127b73;
+        --warn: #a35a00;
+        --focus: #243b53;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--soft);
+      }
+
+      a {
+        color: var(--brand-dark);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      header {
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .wrap {
+        width: min(1440px, calc(100vw - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 20px;
+        align-items: end;
+        padding: 28px 0 22px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(26px, 4vw, 44px);
+        line-height: 1.04;
+        letter-spacing: 0;
+      }
+
+      .sub {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        color: var(--ink);
+        font-weight: 650;
+        font-size: 14px;
+      }
+
+      .button.primary {
+        background: var(--brand);
+        border-color: var(--brand);
+        color: white;
+      }
+
+      .tabs {
+        display: inline-flex;
+        gap: 4px;
+        padding: 4px;
+        margin-bottom: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .tab {
+        min-height: 34px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .tab.active {
+        background: var(--focus);
+        color: #fff;
+      }
+
+      main {
+        padding: 22px 0 44px;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .metric {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        min-height: 100px;
+      }
+
+      .metric .label {
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 8px;
+      }
+
+      .metric .value {
+        font-size: 30px;
+        line-height: 1;
+        font-weight: 760;
+      }
+
+      .metric .hint {
+        color: var(--muted);
+        margin-top: 10px;
+        font-size: 13px;
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: minmax(220px, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        margin: 18px 0 12px;
+      }
+
+      input {
+        width: 100%;
+        min-height: 40px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0 12px;
+        font: inherit;
+        background: #fff;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .table-shell {
+        overflow-x: auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+
+      .chart-panel {
+        display: none;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 18px;
+      }
+
+      .load-more-wrap {
+        display: none;
+        justify-content: center;
+        padding: 14px 0 0;
+      }
+
+      .chart-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: baseline;
+        margin-bottom: 14px;
+      }
+
+      .chart-title {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      .chart-meta {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .chart-wrap {
+        width: 100%;
+        min-height: 300px;
+      }
+
+      .chart-wrap svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .trend-list {
+        width: 100%;
+        margin-top: 14px;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+
+      .trend-list th,
+      .trend-list td {
+        padding: 9px 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        min-width: 0;
+      }
+
+      th,
+      td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+        text-align: left;
+        overflow-wrap: anywhere;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #f9fbfc;
+        color: #4b5963;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0;
+      }
+
+      tr:last-child td {
+        border-bottom: 0;
+      }
+
+      .title {
+        font-weight: 680;
+        line-height: 1.35;
+      }
+
+      .video-cell {
+        display: grid;
+        grid-template-columns: 108px minmax(0, 1fr);
+        gap: 10px;
+        align-items: start;
+      }
+
+      .thumb {
+        width: 108px;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: 6px;
+        background: #e8eef2;
+        border: 1px solid var(--line);
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .subtle {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.25;
+        margin-top: 4px;
+      }
+
+      .user-link,
+      .title-link {
+        font-weight: 700;
+      }
+
+      .title-link {
+        color: var(--ink);
+      }
+
+      .channel-name,
+      .video-id {
+        font-size: 12px;
+        line-height: 1.3;
+        margin-top: 4px;
+      }
+
+      .date-cell {
+        font-size: 12px;
+        line-height: 1.28;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .date-cell .time {
+        color: var(--muted);
+      }
+
+      .views-cell {
+        white-space: nowrap;
+        font-weight: 760;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: #e7f4f2;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .source-note {
+        display: none;
+      }
+
+      col.video-col {
+        width: 50%;
+      }
+
+      col.date-col {
+        width: 9%;
+      }
+
+      col.user-col {
+        width: 16%;
+      }
+
+      col.lang-col {
+        width: 12%;
+      }
+
+      col.views-col {
+        width: 13%;
+      }
+
+      .empty,
+      .error {
+        display: none;
+        margin-top: 16px;
+        padding: 18px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+      }
+
+      .error {
+        border-color: #f0c8a2;
+        color: var(--warn);
+      }
+
+      footer {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 18px;
+      }
+
+      @media (max-width: 820px) {
+        .topbar,
+        .toolbar {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          justify-content: flex-start;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        table {
+          min-width: 980px;
+        }
+      }
+
+      @media (max-width: 520px) {
+        .wrap {
+          width: min(100vw - 20px, 1240px);
+        }
+
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .video-cell {
+          grid-template-columns: 1fr;
+        }
+
+        .thumb {
+          width: 100%;
+          max-width: 260px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap topbar">
+        <div>
+          <h1>#petitplanet YouTube 最新视频看板</h1>
+          <p class="sub">每日 9:00 更新，跟踪 YouTube 上 #petitplanet 近 24 小时和近 30 天视频。</p>
+        </div>
+        <div class="actions">
+          <a class="button primary" id="youtubeLink" target="_blank" rel="noreferrer">打开 YouTube 搜索</a>
+          <a class="button" id="snapshotLink" target="_blank" rel="noreferrer">查看页面快照</a>
+          <a class="button" id="monthSnapshotLink" target="_blank" rel="noreferrer">查看 30 天快照</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <nav class="tabs" aria-label="时间范围">
+        <button class="tab active" type="button" data-tab="last24Hours">近 24 小时</button>
+        <button class="tab" type="button" data-tab="last30Days">近 30 天 Top 10</button>
+        <button class="tab" type="button" data-tab="historyTrend">历史趋势</button>
+      </nav>
+
+      <section class="metrics" aria-label="数据概览">
+        <div class="metric">
+          <div class="label" id="totalLabel">视频数</div>
+          <div class="value" id="totalCount">--</div>
+          <div class="hint" id="totalHint">按 YouTube 上传时间筛选</div>
+        </div>
+        <div class="metric">
+          <div class="label" id="secondLabel">本次扫描视频</div>
+          <div class="value" id="scannedCount">--</div>
+          <div class="hint" id="relevantCount">用于判断近 24 小时</div>
+        </div>
+        <div class="metric">
+          <div class="label" id="thirdLabel">累计浏览量</div>
+          <div class="value" id="viewSum">--</div>
+          <div class="hint" id="thirdHint">仅统计可读取浏览量</div>
+        </div>
+        <div class="metric">
+          <div class="label">最后更新</div>
+          <div class="value" id="updatedAt">--</div>
+          <div class="hint" id="timezone">--</div>
+        </div>
+      </section>
+
+      <section class="toolbar">
+        <input id="search" type="search" placeholder="筛选标题、用户、语言或链接" />
+        <div class="status" id="tableStatus">等待数据</div>
+      </section>
+
+      <section class="table-shell" aria-label="视频明细">
+        <table>
+          <colgroup>
+            <col class="video-col" />
+            <col class="date-col" />
+            <col class="user-col" />
+            <col class="lang-col" />
+            <col class="views-col" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>视频</th>
+              <th>发布时间 UTC+8</th>
+              <th>用户 / ID</th>
+              <th>语言</th>
+              <th>浏览量</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </section>
+      <div class="load-more-wrap" id="loadMoreWrap">
+        <button class="button" type="button" id="loadMoreButton">展示更多</button>
+      </div>
+
+      <section class="chart-panel" id="chartPanel" aria-label="历史趋势">
+        <div class="chart-head">
+          <h2 class="chart-title">24 小时新增视频数趋势</h2>
+          <div class="chart-meta" id="chartMeta">等待数据</div>
+        </div>
+        <div class="chart-wrap" id="trendChart"></div>
+        <table class="trend-list">
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>24h 新增视频数</th>
+              <th>24h 浏览量</th>
+              <th>记录时间 UTC+8</th>
+            </tr>
+          </thead>
+          <tbody id="trendRows"></tbody>
+        </table>
+      </section>
+
+      <div class="empty" id="empty">本次数据里没有识别到 24 小时内发布的视频。</div>
+      <div class="error" id="error"></div>
+
+      <footer id="notes"></footer>
+    </main>
+    <script>
+      const fmt = new Intl.NumberFormat("zh-CN");
+      const dateFmt = new Intl.DateTimeFormat("zh-CN", {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      });
+      const sections = {
+        last24Hours: { title: "近 24 小时", videos: [], totalVideos: 0, totalViews: 0 },
+        last30Days: { title: "近 30 天 Top 10", videos: [], totalVideos: 0, totalViews: 0 },
+      };
+      let historyTrend = [];
+      let activeTab = "last24Hours";
+      let videos = [];
+      let visible30DayCount = 10;
+
+      function shortUrl(url) {
+        try {
+          const parsed = new URL(url);
+          return `${parsed.hostname}${parsed.pathname}`;
+        } catch {
+          return url;
+        }
+      }
+
+      function formatDate(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value || "--";
+        return dateFmt.format(date).replace(/\//g, "-");
+      }
+
+      function formatDateParts(value) {
+        const formatted = formatDate(value);
+        const parts = formatted.split(" ");
+        if (parts.length < 2) return { date: formatted, time: "" };
+        return { date: parts[0], time: parts.slice(1).join(" ") };
+      }
+
+      function channelUrl(video) {
+        const id = video.userId || video.channelId || "";
+        if (!id) return "";
+        if (/^https?:\/\//i.test(id)) return id;
+        if (id.startsWith("@")) return `https://www.youtube.com/${id}`;
+        if (id.startsWith("UC")) return `https://www.youtube.com/channel/${id}`;
+        return `https://www.youtube.com/${id}`;
+      }
+
+      function channelLabel(video) {
+        const id = video.userId || video.channelId || "";
+        if (!id) return "--";
+        try {
+          const parsed = new URL(id);
+          return decodeURIComponent(parsed.pathname.replace(/^\/+/, "")) || parsed.hostname;
+        } catch {
+          return id;
+        }
+      }
+
+      function renderRows(items) {
+        const tbody = document.getElementById("rows");
+        tbody.innerHTML = "";
+        for (const video of items) {
+          const tr = document.createElement("tr");
+          const thumb = video.thumbnailUrl
+            ? `<img class="thumb" src="${escapeHtml(video.thumbnailUrl)}" alt="${escapeHtml(video.title || "视频封面")}" loading="lazy" />`
+            : `<div class="thumb" aria-label="无封面"></div>`;
+          const published = formatDateParts(video.publishedAt || video.publishedText);
+          tr.innerHTML = `
+            <td>
+              <div class="video-cell">
+                ${thumb}
+                <div>
+                  <div class="title">
+                    <a class="title-link" href="${escapeHtml(video.url)}" target="_blank" rel="noreferrer">${escapeHtml(video.title || "Untitled")}</a>
+                  </div>
+                  <div class="muted video-id">${escapeHtml(video.videoId || "")}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="date-cell">
+                <div>${escapeHtml(published.date)}</div>
+                <div class="time">${escapeHtml(published.time)}</div>
+              </div>
+            </td>
+            <td>
+              <a class="user-link" href="${escapeHtml(channelUrl(video) || "#")}" target="_blank" rel="noreferrer">${escapeHtml(channelLabel(video))}</a>
+              <div class="muted channel-name">${escapeHtml(video.channelName || "")}</div>
+            </td>
+            <td>
+              <span class="tag">${escapeHtml(video.language || "Unknown")}</span>
+              <div class="source-note">${escapeHtml(video.languageSource || "")}</div>
+            </td>
+            <td class="views-cell">${video.views == null ? escapeHtml(video.viewsText || "--") : fmt.format(video.views)}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+        document.getElementById("tableStatus").textContent = `${items.length} 条明细`;
+        document.getElementById("empty").style.display = items.length ? "none" : "block";
+      }
+
+      function updateLoadMore() {
+        const wrap = document.getElementById("loadMoreWrap");
+        const button = document.getElementById("loadMoreButton");
+        if (activeTab !== "last30Days") {
+          wrap.style.display = "none";
+          return;
+        }
+        const total = sections.last30Days.allVideos?.length || sections.last30Days.videos?.length || 0;
+        const shown = Math.min(visible30DayCount, total);
+        if (shown >= total) {
+          wrap.style.display = "none";
+          return;
+        }
+        wrap.style.display = "flex";
+        button.textContent = `展示更多（${fmt.format(shown)} / ${fmt.format(total)}）`;
+      }
+
+      function renderTrend(points) {
+        const chart = document.getElementById("trendChart");
+        const rows = document.getElementById("trendRows");
+        rows.innerHTML = "";
+        if (!points.length) {
+          chart.innerHTML = `<div class="empty" style="display:block">还没有历史记录。每日刷新后会自动累积。</div>`;
+          document.getElementById("chartMeta").textContent = "0 个记录点";
+          return;
+        }
+
+        const width = 960;
+        const height = 300;
+        const pad = { top: 22, right: 22, bottom: 42, left: 48 };
+        const values = points.map((point) => Number(point.totalWithin24Hours) || 0);
+        const maxValue = Math.max(1, ...values);
+        const x = (index) => {
+          if (points.length === 1) return width / 2;
+          return pad.left + (index / (points.length - 1)) * (width - pad.left - pad.right);
+        };
+        const y = (value) => height - pad.bottom - (value / maxValue) * (height - pad.top - pad.bottom);
+        const line = points.map((point, index) => `${x(index)},${y(Number(point.totalWithin24Hours) || 0)}`).join(" ");
+        const yTicks = [0, Math.ceil(maxValue / 2), maxValue];
+        const xLabels = points.map((point, index) => {
+          const show = points.length <= 8 || index === 0 || index === points.length - 1 || index % Math.ceil(points.length / 6) === 0;
+          if (!show) return "";
+          return `<text x="${x(index)}" y="${height - 12}" text-anchor="middle" font-size="12" fill="#63707a">${escapeHtml(point.date.slice(5))}</text>`;
+        }).join("");
+        const dots = points.map((point, index) => {
+          const value = Number(point.totalWithin24Hours) || 0;
+          return `<circle cx="${x(index)}" cy="${y(value)}" r="4.5" fill="#d61f2c"><title>${escapeHtml(point.date)}: ${value}</title></circle>`;
+        }).join("");
+        const grid = yTicks.map((tick) => {
+          const yy = y(tick);
+          return `<line x1="${pad.left}" y1="${yy}" x2="${width - pad.right}" y2="${yy}" stroke="#dbe3e8" /><text x="${pad.left - 10}" y="${yy + 4}" text-anchor="end" font-size="12" fill="#63707a">${tick}</text>`;
+        }).join("");
+
+        chart.innerHTML = `
+          <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="24 小时新增视频数历史趋势">
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#ffffff" />
+            ${grid}
+            <polyline points="${line}" fill="none" stroke="#d61f2c" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+            ${dots}
+            ${xLabels}
+          </svg>
+        `;
+        document.getElementById("chartMeta").textContent =
+          `${points.length} 个记录点，最新值 ${fmt.format(values[values.length - 1] || 0)}`;
+
+        for (const point of [...points].reverse()) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${escapeHtml(point.date)}</td>
+            <td>${fmt.format(point.totalWithin24Hours || 0)}</td>
+            <td>${fmt.format(point.totalViewsWithin24Hours || 0)}</td>
+            <td>${escapeHtml(formatDate(point.generatedAt))}</td>
+          `;
+          rows.appendChild(tr);
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, (ch) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[ch]);
+      }
+
+      function applyFilter() {
+        const query = document.getElementById("search").value.trim().toLowerCase();
+        if (!query) return renderRows(videos);
+        renderRows(videos.filter((video) => JSON.stringify(video).toLowerCase().includes(query)));
+      }
+
+      function setActiveTab(tabName) {
+        activeTab = tabName;
+        document.querySelectorAll(".tab").forEach((button) => {
+          button.classList.toggle("active", button.dataset.tab === tabName);
+        });
+        const isHistory = tabName === "historyTrend";
+        document.querySelector(".toolbar").style.display = isHistory ? "none" : "grid";
+        document.querySelector(".table-shell").style.display = isHistory ? "none" : "block";
+        document.getElementById("chartPanel").style.display = isHistory ? "block" : "none";
+        document.getElementById("loadMoreWrap").style.display = "none";
+        document.getElementById("empty").style.display = "none";
+
+        if (isHistory) {
+          const latest = historyTrend[historyTrend.length - 1] || {};
+          const values = historyTrend.map((point) => Number(point.totalWithin24Hours) || 0);
+          const peak = Math.max(0, ...values);
+          document.getElementById("totalLabel").textContent = "记录天数";
+          document.getElementById("totalCount").textContent = fmt.format(historyTrend.length);
+          document.getElementById("totalHint").textContent = "按 UTC+8 日期聚合";
+          document.getElementById("secondLabel").textContent = "最新 24h 新增";
+          document.getElementById("scannedCount").textContent = fmt.format(latest.totalWithin24Hours || 0);
+          document.getElementById("relevantCount").textContent = latest.date ? `最新日期 ${latest.date}` : "等待每日刷新";
+          document.getElementById("thirdLabel").textContent = "历史峰值";
+          document.getElementById("viewSum").textContent = fmt.format(peak);
+          document.getElementById("thirdHint").textContent = "24h 新增视频数最高值";
+          renderTrend(historyTrend);
+          return;
+        }
+
+        const section = sections[tabName] || sections.last24Hours;
+        videos = tabName === "last30Days"
+          ? (section.allVideos || section.videos || []).slice(0, visible30DayCount)
+          : section.videos || [];
+        document.getElementById("totalLabel").textContent =
+          tabName === "last30Days" ? "30 天内视频数" : "24 小时内视频数";
+        document.getElementById("totalCount").textContent = fmt.format(section.totalVideos || 0);
+        document.getElementById("totalHint").textContent =
+          tabName === "last30Days" ? "明细展示浏览量前 10 条" : "明细按浏览量从高到低";
+        document.getElementById("secondLabel").textContent = "本次扫描视频";
+        document.getElementById("scannedCount").textContent = fmt.format(window.__SCANNED_COUNT__ || 0);
+        document.getElementById("relevantCount").textContent =
+          `其中 ${fmt.format(window.__RELEVANT_COUNT__ || 0)} 条匹配 Petit Planet`;
+        document.getElementById("thirdLabel").textContent = "累计浏览量";
+        document.getElementById("viewSum").textContent = fmt.format(section.totalViews || 0);
+        document.getElementById("thirdHint").textContent = "仅统计可读取浏览量";
+        document.getElementById("search").value = "";
+        renderRows(videos);
+        updateLoadMore();
+      }
+
+      async function load() {
+        try {
+          let data = window.__DASHBOARD_DATA__;
+          if (!data) {
+            const res = await fetch("./data/latest.json", { cache: "no-store" });
+            if (!res.ok) throw new Error("还没有生成 data/latest.json，请先运行每日更新脚本。");
+            data = await res.json();
+          }
+          const last24 = data.sections?.last24Hours || {
+            totalVideos: data.totalWithin24Hours || 0,
+            totalViews: data.totalViewsWithin24Hours || 0,
+            videos: data.videos || [],
+          };
+          const last30 = data.sections?.last30Days || {
+            totalVideos: data.totalWithin30Days || 0,
+            totalViews: data.totalViewsWithin30Days || 0,
+            videos: data.videos30Days || [],
+          };
+          sections.last24Hours = last24;
+          sections.last30Days = {
+            ...last30,
+            allVideos: data.all30DayVideos || last30.allVideos || last30.videos || [],
+          };
+          historyTrend = data.historyTrend || [];
+          window.__SCANNED_COUNT__ = data.scannedVideos || 0;
+          window.__RELEVANT_COUNT__ = data.relevantScannedVideos || 0;
+
+          document.getElementById("scannedCount").textContent = fmt.format(data.scannedVideos || 0);
+          document.getElementById("relevantCount").textContent =
+            `其中 ${fmt.format(data.relevantScannedVideos || 0)} 条匹配 Petit Planet`;
+          document.getElementById("updatedAt").textContent = formatDate(data.generatedAt);
+          document.getElementById("timezone").textContent = "UTC+8 / 24h";
+          document.getElementById("youtubeLink").href = data.searchUrl;
+          document.getElementById("snapshotLink").href = data.snapshotViewerFile || data.snapshotFile || "#";
+          document.getElementById("monthSnapshotLink").href =
+            data.monthSnapshotViewerFile || data.monthSnapshotFile || "#";
+          document.getElementById("notes").textContent = (data.notes || []).join(" ");
+          setActiveTab(activeTab);
+        } catch (error) {
+          const box = document.getElementById("error");
+          box.textContent = error.message;
+          box.style.display = "block";
+        }
+      }
+
+      document.getElementById("search").addEventListener("input", applyFilter);
+      document.querySelectorAll(".tab").forEach((button) => {
+        button.addEventListener("click", () => {
+          if (button.dataset.tab === "last30Days") visible30DayCount = 10;
+          setActiveTab(button.dataset.tab);
+        });
+      });
+      document.getElementById("loadMoreButton").addEventListener("click", () => {
+        visible30DayCount += 10;
+        setActiveTab("last30Days");
+      });
+      load();
+    </script>
+  </body>
+</html>
